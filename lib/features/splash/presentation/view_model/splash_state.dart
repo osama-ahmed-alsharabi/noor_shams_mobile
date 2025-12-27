@@ -11,4 +11,6 @@ class SplashInitial extends SplashState {}
 
 class SplashLoading extends SplashState {}
 
+class SplashZooming extends SplashState {}
+
 class SplashCompleted extends SplashState {}

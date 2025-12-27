@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../home/presentation/view/home_view.dart';
 import '../view_model/splash_cubit.dart';
 import '../view_model/splash_state.dart';
 import 'widgets/splash_body.dart';
@@ -14,16 +15,9 @@ class SplashView extends StatelessWidget {
       child: BlocListener<SplashCubit, SplashState>(
         listener: (context, state) {
           if (state is SplashCompleted) {
-            // Navigate to Next Screen (Auth or Home)
-            // For now, we'll just print or show a snackbar/placeholder navigation
-            // In a real app: Navigator.pushReplacementNamed(context, Routes.loginRoute);
-            // Navigator.of(context).pushReplacement(
-            //   MaterialPageRoute(
-            //     builder: (context) => const Scaffold(
-            //       body: Center(child: Text('Home Screen Placeholder')),
-            //     ),
-            //   ),
-            // );
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const HomeView()),
+            );
           }
         },
         child: const Scaffold(body: SplashBody()),
