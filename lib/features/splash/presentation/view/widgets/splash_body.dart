@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/assets_manager.dart';
 import '../../view_model/splash_cubit.dart';
 import '../../view_model/splash_state.dart';
-import 'package:noor_shams_mobile/core/utils/app_colors.dart';
-import 'package:noor_shams_mobile/core/utils/assets_manager.dart';
 
 class SplashBody extends StatefulWidget {
   const SplashBody({super.key});
@@ -13,56 +13,77 @@ class SplashBody extends StatefulWidget {
 }
 
 class _SplashBodyState extends State<SplashBody> with TickerProviderStateMixin {
-  late AnimationController _controller;
-  late AnimationController _scaleController;
-  late Animation<double> _scaleAnimation;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _fadeController = AnimationController(
+      vsync: this,
       duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat();
-
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
     );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 12.0).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
-    );
+    context.read<SplashCubit>().startSplash();
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _scaleController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<SplashCubit, SplashState>(
-      listener: (context, state) {
-        if (state is SplashZooming) {
-          _scaleController.forward();
-        }
-      },
+      listener: (context, state) {},
       child: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(color: AppColors.scaffoldBackground),
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.white,
+              Color(0xFFE3F2FD), // Very light blue tint
+            ],
+          ),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ScaleTransition(
-              scale: _scaleAnimation,
-              child: RotationTransition(
-                turns: _controller,
-                child: Image.asset(
-                  AssetsManager.logo,
-                  height: MediaQuery.sizeOf(context).height * 0.5,
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: Image.asset(AssetsManager.logo, width: 180, height: 180),
+            ),
+            const SizedBox(height: 20),
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: const Text(
+                'نور الشمس',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryBlue,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: Text(
+                'الطاقة البديلة.. لمستقبل مشرق',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.primaryOrange.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
