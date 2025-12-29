@@ -13,6 +13,8 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import '../widgets/auth_background.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/role_selector.dart';
+import 'package:noor_shams_mobile/features/service_provider/presentation/views/service_provider_layout.dart';
+import 'package:noor_shams_mobile/features/home/presentation/view/home_view.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -249,7 +251,29 @@ class _RegisterPageState extends State<RegisterPage>
                                                 ..hideCurrentSnackBar()
                                                 ..showSnackBar(snackBar);
 
-                                              Navigator.pop(context);
+                                              // Navigator.pop(context); // Don't just pop, navigate to home
+
+                                              // Navigate based on role
+                                              if (state.user.role ==
+                                                  'provider') {
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const ServiceProviderLayout(),
+                                                  ),
+                                                  (route) => false,
+                                                );
+                                              } else {
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const HomeView(),
+                                                  ),
+                                                  (route) => false,
+                                                );
+                                              }
                                             } else if (state is AuthError) {
                                               final snackBar = SnackBar(
                                                 elevation: 0,

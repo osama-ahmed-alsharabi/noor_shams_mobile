@@ -7,6 +7,8 @@ import 'package:noor_shams_mobile/features/auth/presentation/cubit/auth_state.da
 import 'package:noor_shams_mobile/features/auth/presentation/pages/register_view.dart';
 import 'package:noor_shams_mobile/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:noor_shams_mobile/features/auth/presentation/widgets/primary_button.dart';
+import 'package:noor_shams_mobile/features/service_provider/presentation/views/service_provider_layout.dart';
+import 'package:noor_shams_mobile/features/home/presentation/view/home_view.dart';
 import 'package:noor_shams_mobile/core/widgets/loading_overlay.dart';
 import 'package:noor_shams_mobile/core/utils/app_error_handler.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -189,6 +191,27 @@ class _LoginPageState extends State<LoginPage>
                                               ScaffoldMessenger.of(context)
                                                 ..hideCurrentSnackBar()
                                                 ..showSnackBar(snackBar);
+
+                                              // Navigate based on role
+                                              if (state.user.role ==
+                                                  'provider') {
+                                                Navigator.pushReplacement(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const ServiceProviderLayout(),
+                                                  ),
+                                                );
+                                              } else {
+                                                Navigator.pushReplacement(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        // Assumed Client Home, adjust if different
+                                                        const HomeView(),
+                                                  ),
+                                                );
+                                              }
                                             } else if (state is AuthError) {
                                               final snackBar = SnackBar(
                                                 elevation: 0,
