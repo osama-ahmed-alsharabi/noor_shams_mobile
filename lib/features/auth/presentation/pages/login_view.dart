@@ -8,7 +8,7 @@ import 'package:noor_shams_mobile/features/auth/presentation/pages/register_view
 import 'package:noor_shams_mobile/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:noor_shams_mobile/features/auth/presentation/widgets/primary_button.dart';
 import 'package:noor_shams_mobile/features/service_provider/presentation/views/service_provider_layout.dart';
-import 'package:noor_shams_mobile/features/home/presentation/view/home_view.dart';
+import 'package:noor_shams_mobile/features/client/presentation/views/client_layout.dart';
 import 'package:noor_shams_mobile/core/widgets/loading_overlay.dart';
 import 'package:noor_shams_mobile/core/utils/app_error_handler.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -207,8 +207,7 @@ class _LoginPageState extends State<LoginPage>
                                                   context,
                                                   MaterialPageRoute(
                                                     builder: (context) =>
-                                                        // Assumed Client Home, adjust if different
-                                                        const HomeView(),
+                                                        const ClientLayout(),
                                                   ),
                                                 );
                                               }

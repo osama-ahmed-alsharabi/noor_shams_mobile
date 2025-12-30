@@ -73,18 +73,26 @@ class ChatRepositoryImpl implements ChatRepository {
             value: orderId,
           ),
           callback: (payload) async {
-            // Fetch the complete message with sender info
-            final response = await _supabase
-                .from('chat_messages')
-                .select('*, sender:users!sender_id(name, avatar_url)')
-                .eq('id', payload.newRecord['id'])
-                .single();
+            try {
+              // Fetch the complete message with sender info
+              final response = await _supabase
+                  .from('chat_messages')
+                  .select('*, sender:users!sender_id(name, avatar_url)')
+                  .eq('id', payload.newRecord['id'])
+                  .single();
 
-            final message = ChatMessageModel.fromJson(response);
-            _messageController.add(message);
+              final message = ChatMessageModel.fromJson(response);
+              _messageController.add(message);
+            } catch (e) {
+              // debugPrint('Stacktrace: $e');
+            }
           },
         )
-        .subscribe();
+        .subscribe((status, error) {
+          if (error != null) {
+            // debugPrint('Realtime error: $error');
+          }
+        });
 
     return _messageController.stream;
   }

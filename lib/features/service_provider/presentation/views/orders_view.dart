@@ -208,7 +208,13 @@ class _OrdersViewState extends State<OrdersView>
                                               ),
                                             ),
                                           ),
-                                        );
+                                        ).then((_) {
+                                          if (context.mounted) {
+                                            context
+                                                .read<OrderCubit>()
+                                                .loadProviderOrders();
+                                          }
+                                        });
                                       },
                                     ),
                                   );

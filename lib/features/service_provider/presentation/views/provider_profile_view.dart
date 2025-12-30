@@ -10,6 +10,7 @@ import '../cubit/order_cubit.dart';
 import '../cubit/order_state.dart';
 import '../widgets/provider_background.dart';
 import 'profile_edit_view.dart';
+import '../../../auth/presentation/pages/login_view.dart';
 
 class ProviderProfileView extends StatefulWidget {
   const ProviderProfileView({super.key});
@@ -44,9 +45,9 @@ class _ProviderProfileViewState extends State<ProviderProfileView> {
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              context.read<ProfileCubit>().logout();
+              await context.read<ProfileCubit>().logout();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -64,9 +65,10 @@ class _ProviderProfileViewState extends State<ProviderProfileView> {
     return BlocListener<ProfileCubit, ProfileState>(
       listener: (context, state) {
         if (state is ProfileLoggedOut) {
-          Navigator.of(
-            context,
-          ).pushNamedAndRemoveUntil('/login', (route) => false);
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
+          );
         } else if (state is ProfileError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),

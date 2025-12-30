@@ -287,7 +287,7 @@ class _MyServicesViewState extends State<MyServicesView> {
               }
 
               return SizedBox(
-                height: 200,
+                height: 210,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: state.channels.length,

@@ -14,7 +14,7 @@ import '../widgets/auth_background.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/role_selector.dart';
 import 'package:noor_shams_mobile/features/service_provider/presentation/views/service_provider_layout.dart';
-import 'package:noor_shams_mobile/features/home/presentation/view/home_view.dart';
+import 'package:noor_shams_mobile/features/client/presentation/views/client_layout.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -269,7 +269,7 @@ class _RegisterPageState extends State<RegisterPage>
                                                   context,
                                                   MaterialPageRoute(
                                                     builder: (context) =>
-                                                        const HomeView(),
+                                                        const ClientLayout(),
                                                   ),
                                                   (route) => false,
                                                 );
