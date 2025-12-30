@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:noor_shams_mobile/core/utils/app_colors.dart';
+import '../../domain/entities/channel_entity.dart';
 import '../cubit/channel_cubit.dart';
 import '../cubit/channel_state.dart';
 import '../cubit/offer_cubit.dart';
@@ -137,7 +138,103 @@ class _MyServicesViewState extends State<MyServicesView> {
           ),
         ],
       ),
+      floatingActionButton: BlocBuilder<ChannelCubit, ChannelState>(
+        builder: (context, state) {
+          // Only show FAB if there are channels
+          if (state is ChannelsLoaded && state.channels.isNotEmpty) {
+            return FloatingActionButton.extended(
+              onPressed: () => _showAddOfferDialog(state.channels),
+              backgroundColor: AppColors.primaryBlue,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'إضافة عرض',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
     );
+  }
+
+  void _showAddOfferDialog(List<ChannelEntity> channels) {
+    if (channels.length == 1) {
+      // If only one channel, navigate directly
+      _navigateToCreateOffer(channels.first.id);
+    } else {
+      // Show channel selection dialog
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (dialogContext) => Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'اختر القناة',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'أي قناة تريد إضافة العرض إليها؟',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary.withOpacity(0.8),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...channels.map(
+                (channel) => ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: channel.coverImageUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              channel.coverImageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.store,
+                                color: AppColors.primaryBlue,
+                              ),
+                            ),
+                          )
+                        : const Icon(Icons.store, color: AppColors.primaryBlue),
+                  ),
+                  title: Text(
+                    channel.name,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.pop(dialogContext);
+                    _navigateToCreateOffer(channel.id);
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildChannelsSection() {

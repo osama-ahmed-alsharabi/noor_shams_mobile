@@ -28,7 +28,6 @@ class ChannelCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: Container(
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.7),
               borderRadius: BorderRadius.circular(20),
@@ -47,115 +46,162 @@ class ChannelCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primaryBlue,
-                            AppColors.primaryBlue.withOpacity(0.7),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.store,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                // Cover Image Section
+                Container(
+                  height: 80,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primaryBlue,
+                        AppColors.primaryBlue.withOpacity(0.7),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child:
+                      channel.coverImageUrl != null &&
+                          channel.coverImageUrl!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                          child: Image.network(
+                            channel.coverImageUrl!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: 80,
+                            errorBuilder: (_, __, ___) =>
+                                _buildPlaceholderIcon(),
+                          ),
+                        )
+                      : _buildPlaceholderIcon(),
+                ),
+                // Content Section
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Text(
-                            channel.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                          Expanded(
+                            child: Text(
+                              channel.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: channel.isActive
+                                  ? AppColors.primaryGreen.withOpacity(0.1)
+                                  : Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              channel.isActive ? 'نشطة' : 'غير نشطة',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: channel.isActive
+                                    ? AppColors.primaryGreen
+                                    : Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (channel.description != null &&
+                          channel.description!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          channel.description!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary.withOpacity(0.8),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
                           Row(
                             children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: channel.isActive
-                                      ? AppColors.primaryGreen
-                                      : Colors.grey,
-                                  shape: BoxShape.circle,
+                              GestureDetector(
+                                onTap: onEdit,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryBlue.withOpacity(
+                                      0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.edit_outlined,
+                                    size: 16,
+                                    color: AppColors.primaryBlue,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                channel.isActive ? 'نشطة' : 'غير نشطة',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: channel.isActive
-                                      ? AppColors.primaryGreen
-                                      : Colors.grey,
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: onDelete,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.delete_outline,
+                                    size: 16,
+                                    color: Colors.red.shade400,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
+                          Switch(
+                            value: channel.isActive,
+                            onChanged: (_) => onToggleStatus?.call(),
+                            activeColor: AppColors.primaryGreen,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
                         ],
                       ),
-                    ),
-                    Switch(
-                      value: channel.isActive,
-                      onChanged: (_) => onToggleStatus?.call(),
-                      activeColor: AppColors.primaryGreen,
-                    ),
-                  ],
-                ),
-                if (channel.description != null &&
-                    channel.description!.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    channel.description!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary.withOpacity(0.8),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    ],
                   ),
-                ],
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: onEdit,
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('تعديل'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primaryBlue,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton.icon(
-                      onPressed: onDelete,
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      label: const Text('حذف'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red.shade400,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPlaceholderIcon() {
+    return Center(
+      child: Icon(Icons.store, color: Colors.white.withOpacity(0.7), size: 40),
     );
   }
 }
