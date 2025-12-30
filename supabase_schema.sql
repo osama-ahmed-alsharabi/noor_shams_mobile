@@ -218,3 +218,29 @@ create trigger orders_updated_at before update on public.orders
 -- Enable realtime for chat messages
 alter publication supabase_realtime add table public.chat_messages;
 alter publication supabase_realtime add table public.orders;
+
+
+-- إنشاء bucket للصور
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('images', 'images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- سياسة السماح بالرفع للمستخدمين المسجلين
+CREATE POLICY "Allow authenticated uploads" ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'images');
+
+-- سياسة السماح بالقراءة للجميع (public)
+CREATE POLICY "Allow public read" ON storage.objects
+FOR SELECT TO public
+USING (bucket_id = 'images');
+
+-- سياسة السماح بالتحديث للمالك
+CREATE POLICY "Allow owner update" ON storage.objects
+FOR UPDATE TO authenticated
+USING (bucket_id = 'images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- سياسة السماح بالحذف للمالك
+CREATE POLICY "Allow owner delete" ON storage.objects
+FOR DELETE TO authenticated
+USING (bucket_id = 'images' AND auth.uid()::text = (storage.foldername(name))[1]);

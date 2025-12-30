@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:noor_shams_mobile/core/utils/app_colors.dart';
 import 'package:noor_shams_mobile/core/utils/glass_box.dart';
+import 'package:noor_shams_mobile/core/widgets/loading_overlay.dart';
 import '../cubit/offer_cubit.dart';
 import '../cubit/offer_state.dart';
 import '../widgets/provider_background.dart';
@@ -13,6 +16,7 @@ class OfferCreateView extends StatefulWidget {
   final String? initialDescription;
   final double? initialPrice;
   final int? initialDurationDays;
+  final String? initialImageUrl;
 
   const OfferCreateView({
     super.key,
@@ -22,6 +26,7 @@ class OfferCreateView extends StatefulWidget {
     this.initialDescription,
     this.initialPrice,
     this.initialDurationDays,
+    this.initialImageUrl,
   });
 
   @override
@@ -34,6 +39,8 @@ class _OfferCreateViewState extends State<OfferCreateView> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _priceController;
   late final TextEditingController _durationController;
+  XFile? _selectedImage;
+  String? _existingImageUrl;
 
   bool get isEditing => widget.offerId != null;
 
@@ -45,11 +52,12 @@ class _OfferCreateViewState extends State<OfferCreateView> {
       text: widget.initialDescription,
     );
     _priceController = TextEditingController(
-      text: widget.initialPrice?.toStringAsFixed(0),
+      text: widget.initialPrice?.toString() ?? '',
     );
     _durationController = TextEditingController(
-      text: widget.initialDurationDays?.toString(),
+      text: widget.initialDurationDays?.toString() ?? '',
     );
+    _existingImageUrl = widget.initialImageUrl;
   }
 
   @override
@@ -61,31 +69,50 @@ class _OfferCreateViewState extends State<OfferCreateView> {
     super.dispose();
   }
 
-  void _handleSubmit() {
-    if (_formKey.currentState!.validate()) {
-      final cubit = context.read<OfferCubit>();
-      final price = double.parse(_priceController.text.trim());
-      final duration = _durationController.text.trim().isNotEmpty
-          ? int.parse(_durationController.text.trim())
-          : null;
+  Future<void> _pickImage() async {
+    final image = await context.read<OfferCubit>().pickImage();
+    if (image != null) {
+      setState(() {
+        _selectedImage = image;
+        _existingImageUrl = null;
+      });
+    }
+  }
 
-      if (isEditing) {
-        cubit.updateOffer(
-          id: widget.offerId!,
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          price: price,
-          durationDays: duration,
-        );
-      } else {
-        cubit.createOffer(
-          channelId: widget.channelId,
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          price: price,
-          durationDays: duration,
-        );
-      }
+  void _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final cubit = context.read<OfferCubit>();
+    String? imageUrl = _existingImageUrl;
+
+    // Upload image if selected
+    if (_selectedImage != null) {
+      final offerId =
+          widget.offerId ?? DateTime.now().millisecondsSinceEpoch.toString();
+      imageUrl = await cubit.uploadOfferImage(_selectedImage!, offerId);
+    }
+
+    final price = double.tryParse(_priceController.text) ?? 0;
+    final duration = int.tryParse(_durationController.text);
+
+    if (isEditing) {
+      cubit.updateOffer(
+        id: widget.offerId!,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        price: price,
+        durationDays: duration,
+        imageUrl: imageUrl,
+      );
+    } else {
+      cubit.createOffer(
+        channelId: widget.channelId,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        price: price,
+        durationDays: duration,
+        imageUrl: imageUrl,
+      );
     }
   }
 
@@ -107,176 +134,178 @@ class _OfferCreateViewState extends State<OfferCreateView> {
           );
         }
       },
-      child: Scaffold(
-        body: Stack(
-          children: [
-            const ProviderBackground(),
-            SafeArea(
-              child: Column(
+      child: BlocBuilder<OfferCubit, OfferState>(
+        builder: (context, state) {
+          final isLoading = state is OfferLoading;
+
+          return LoadingOverlay(
+            isLoading: isLoading,
+            child: Scaffold(
+              body: Stack(
                 children: [
-                  AppBar(
-                    title: Text(isEditing ? 'تعديل العرض' : 'إضافة عرض جديد'),
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    centerTitle: true,
-                    titleTextStyle: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    iconTheme: const IconThemeData(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: GlassBox(
-                        opacity: 0.7,
-                        blur: 10,
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'تفاصيل العرض',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                TextFormField(
-                                  controller: _titleController,
-                                  decoration: InputDecoration(
-                                    labelText: 'عنوان العرض',
-                                    hintText: 'مثال: تركيب منظومة شمسية 5 كيلو',
-                                    prefixIcon: const Icon(Icons.title),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.5),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'الرجاء إدخال عنوان العرض';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 20),
-                                TextFormField(
-                                  controller: _descriptionController,
-                                  decoration: InputDecoration(
-                                    labelText: 'وصف العرض',
-                                    hintText: 'وصف تفصيلي للخدمة المقدمة',
-                                    prefixIcon: const Icon(
-                                      Icons.description_outlined,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.5),
-                                  ),
-                                  maxLines: 4,
-                                ),
-                                const SizedBox(height: 20),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: _priceController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(
-                                          labelText: 'السعر (ر.ي)',
-                                          prefixIcon: const Icon(
-                                            Icons.attach_money,
+                  const ProviderBackground(),
+                  SafeArea(
+                    child: Column(
+                      children: [
+                        AppBar(
+                          title: Text(
+                            isEditing ? 'تعديل العرض' : 'إضافة عرض جديد',
+                          ),
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          centerTitle: true,
+                          titleTextStyle: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          iconTheme: const IconThemeData(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Offer Image
+                                  _buildImagePicker(),
+                                  const SizedBox(height: 24),
+                                  // Form Fields
+                                  GlassBox(
+                                    opacity: 0.7,
+                                    blur: 10,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Column(
+                                        children: [
+                                          TextFormField(
+                                            controller: _titleController,
+                                            decoration: InputDecoration(
+                                              labelText: 'عنوان العرض *',
+                                              prefixIcon: const Icon(
+                                                Icons.title_outlined,
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              filled: true,
+                                              fillColor: Colors.white
+                                                  .withOpacity(0.5),
+                                            ),
+                                            validator: (value) {
+                                              if (value == null ||
+                                                  value.trim().isEmpty) {
+                                                return 'الرجاء إدخال عنوان العرض';
+                                              }
+                                              return null;
+                                            },
                                           ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                          const SizedBox(height: 16),
+                                          TextFormField(
+                                            controller: _descriptionController,
+                                            maxLines: 3,
+                                            decoration: InputDecoration(
+                                              labelText: 'وصف العرض',
+                                              alignLabelWithHint: true,
+                                              prefixIcon: const Padding(
+                                                padding: EdgeInsets.only(
+                                                  bottom: 40,
+                                                ),
+                                                child: Icon(
+                                                  Icons.description_outlined,
+                                                ),
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              filled: true,
+                                              fillColor: Colors.white
+                                                  .withOpacity(0.5),
                                             ),
                                           ),
-                                          filled: true,
-                                          fillColor: Colors.white.withOpacity(
-                                            0.5,
-                                          ),
-                                        ),
-                                        validator: (value) {
-                                          if (value == null ||
-                                              value.trim().isEmpty) {
-                                            return 'مطلوب';
-                                          }
-                                          if (double.tryParse(value) == null) {
-                                            return 'قيمة غير صالحة';
-                                          }
-                                          return null;
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: TextFormField(
-                                        controller: _durationController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(
-                                          labelText: 'المدة (بالأيام)',
-                                          prefixIcon: const Icon(
-                                            Icons.schedule,
-                                          ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          filled: true,
-                                          fillColor: Colors.white.withOpacity(
-                                            0.5,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 32),
-                                BlocBuilder<OfferCubit, OfferState>(
-                                  builder: (context, state) {
-                                    final isLoading = state is OfferLoading;
-                                    return SizedBox(
-                                      width: double.infinity,
-                                      height: 50,
-                                      child: ElevatedButton(
-                                        onPressed: isLoading
-                                            ? null
-                                            : _handleSubmit,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor:
-                                              AppColors.primaryBlue,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          elevation: 0,
-                                        ),
-                                        child: isLoading
-                                            ? const SizedBox(
-                                                width: 24,
-                                                height: 24,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      color: Colors.white,
-                                                      strokeWidth: 2,
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller: _priceController,
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  decoration: InputDecoration(
+                                                    labelText: 'السعر *',
+                                                    prefixIcon: const Icon(
+                                                      Icons.attach_money,
                                                     ),
-                                              )
-                                            : Text(
+                                                    suffixText: 'ر.ي',
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                    filled: true,
+                                                    fillColor: Colors.white
+                                                        .withOpacity(0.5),
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.isEmpty) {
+                                                      return 'أدخل السعر';
+                                                    }
+                                                    if (double.tryParse(
+                                                          value,
+                                                        ) ==
+                                                        null) {
+                                                      return 'رقم غير صالح';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller:
+                                                      _durationController,
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  decoration: InputDecoration(
+                                                    labelText: 'المدة (أيام)',
+                                                    prefixIcon: const Icon(
+                                                      Icons.schedule,
+                                                    ),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                    ),
+                                                    filled: true,
+                                                    fillColor: Colors.white
+                                                        .withOpacity(0.5),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 24),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            height: 50,
+                                            child: ElevatedButton.icon(
+                                              onPressed: _handleSubmit,
+                                              icon: Icon(
+                                                isEditing
+                                                    ? Icons.save
+                                                    : Icons.add,
+                                              ),
+                                              label: Text(
                                                 isEditing
                                                     ? 'حفظ التغييرات'
                                                     : 'إضافة العرض',
@@ -285,22 +314,122 @@ class _OfferCreateViewState extends State<OfferCreateView> {
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    AppColors.primaryBlue,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    );
-                                  },
-                                ),
-                              ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return GestureDetector(
+      onTap: _pickImage,
+      child: Container(
+        height: 160,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primaryOrange.withOpacity(0.1),
+              AppColors.primaryBlue.withOpacity(0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primaryOrange.withOpacity(0.3),
+            width: 2,
+          ),
+          image: _selectedImage != null
+              ? DecorationImage(
+                  image: FileImage(File(_selectedImage!.path)),
+                  fit: BoxFit.cover,
+                )
+              : _existingImageUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(_existingImageUrl!),
+                  fit: BoxFit.cover,
+                )
+              : null,
         ),
+        child: _selectedImage == null && _existingImageUrl == null
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryOrange.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 28,
+                      color: AppColors.primaryOrange,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'إضافة صورة للعرض',
+                    style: TextStyle(
+                      color: AppColors.primaryOrange,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'اختياري',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              )
+            : Stack(
+                children: [
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

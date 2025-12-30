@@ -189,35 +189,47 @@ class _MyServicesViewState extends State<MyServicesView> {
                 );
               }
 
-              return Column(
-                children: state.channels.map((channel) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: ChannelCard(
-                      channel: channel,
-                      onTap: () {
-                        // Could navigate to channel details
-                      },
-                      onToggleStatus: () {
-                        context.read<ChannelCubit>().toggleChannelStatus(
-                          channel.id,
-                          !channel.isActive,
-                        );
-                      },
-                      onEdit: () => _navigateToCreateChannel(
-                        channelId: channel.id,
-                        name: channel.name,
-                        description: channel.description,
+              return SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: state.channels.length,
+                  itemBuilder: (context, index) {
+                    final channel = state.channels[index];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        left: index == 0 ? 0 : 8,
+                        right: index == state.channels.length - 1 ? 0 : 8,
                       ),
-                      onDelete: () => _showDeleteConfirmation(
-                        'القناة "${channel.name}"',
-                        () => context.read<ChannelCubit>().deleteChannel(
-                          channel.id,
+                      child: SizedBox(
+                        width: 280,
+                        child: ChannelCard(
+                          channel: channel,
+                          onTap: () {
+                            // Could navigate to channel details
+                          },
+                          onToggleStatus: () {
+                            context.read<ChannelCubit>().toggleChannelStatus(
+                              channel.id,
+                              !channel.isActive,
+                            );
+                          },
+                          onEdit: () => _navigateToCreateChannel(
+                            channelId: channel.id,
+                            name: channel.name,
+                            description: channel.description,
+                          ),
+                          onDelete: () => _showDeleteConfirmation(
+                            'القناة "${channel.name}"',
+                            () => context.read<ChannelCubit>().deleteChannel(
+                              channel.id,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  },
+                ),
               );
             }
 

@@ -1,13 +1,17 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/repositories/channel_repository_impl.dart';
+import '../../data/services/image_upload_service.dart';
 import '../../domain/repositories/channel_repository.dart';
 import 'channel_state.dart';
 
 class ChannelCubit extends Cubit<ChannelState> {
   final ChannelRepository _repository;
+  final ImageUploadService _imageService;
 
   ChannelCubit({ChannelRepository? repository})
     : _repository = repository ?? ChannelRepositoryImpl(),
+      _imageService = ImageUploadService(),
       super(ChannelInitial());
 
   Future<void> loadChannels() async {
@@ -79,6 +83,36 @@ class ChannelCubit extends Cubit<ChannelState> {
       await loadChannels();
     } catch (e) {
       emit(ChannelError('فشل في تغيير حالة القناة: $e'));
+    }
+  }
+
+  /// Pick and upload channel cover image
+  Future<String?> pickAndUploadCoverImage(String channelId) async {
+    try {
+      final image = await _imageService.pickImageFromGallery();
+      if (image == null) return null;
+
+      emit(ChannelLoading());
+      final imageUrl = await _imageService.uploadChannelCover(image, channelId);
+      return imageUrl;
+    } catch (e) {
+      emit(ChannelError('فشل في رفع صورة القناة: $e'));
+      return null;
+    }
+  }
+
+  /// Pick image without uploading (for create view)
+  Future<XFile?> pickImage() async {
+    return await _imageService.pickImageFromGallery();
+  }
+
+  /// Upload channel cover
+  Future<String?> uploadCoverImage(XFile image, String channelId) async {
+    try {
+      return await _imageService.uploadChannelCover(image, channelId);
+    } catch (e) {
+      emit(ChannelError('فشل في رفع صورة القناة: $e'));
+      return null;
     }
   }
 }

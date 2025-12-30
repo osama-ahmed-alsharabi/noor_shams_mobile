@@ -1,14 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/repositories/offer_repository_impl.dart';
+import '../../data/services/image_upload_service.dart';
 import '../../domain/repositories/offer_repository.dart';
 import 'offer_state.dart';
 
 class OfferCubit extends Cubit<OfferState> {
   final OfferRepository _repository;
+  final ImageUploadService _imageService;
   String? _currentChannelId;
 
   OfferCubit({OfferRepository? repository})
     : _repository = repository ?? OfferRepositoryImpl(),
+      _imageService = ImageUploadService(),
       super(OfferInitial());
 
   Future<void> loadOffers({String? channelId}) async {
@@ -93,6 +97,21 @@ class OfferCubit extends Cubit<OfferState> {
       await loadOffers(channelId: _currentChannelId);
     } catch (e) {
       emit(OfferError('فشل في تغيير حالة العرض: $e'));
+    }
+  }
+
+  /// Pick image without uploading
+  Future<XFile?> pickImage() async {
+    return await _imageService.pickImageFromGallery();
+  }
+
+  /// Upload offer image
+  Future<String?> uploadOfferImage(XFile image, String offerId) async {
+    try {
+      return await _imageService.uploadOfferImage(image, offerId);
+    } catch (e) {
+      emit(OfferError('فشل في رفع صورة العرض: $e'));
+      return null;
     }
   }
 }
